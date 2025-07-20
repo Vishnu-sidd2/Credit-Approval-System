@@ -1,0 +1,11 @@
+Django==4.*
+djangorestframework==3.*
+psycopg2-binary==2.*
+pandas==2.*
+openpyxl==3.*
+celery==5.* # <--- Make sure this is here
+redis==4.* # <--- Make sure this is here
+dj-database-url==1.*
+gunicorn==22.* # For your Docker CMD
+python-dotenv==1.*
+django-cors-headers==4.*

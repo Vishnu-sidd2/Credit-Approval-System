@@ -1,0 +1,55 @@
+version: '3.8' # You can remove this line if you want to get rid of the warning
+
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: credit_approval_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+
+  web: # <--- CORRECTED INDENTATION: This 'web' should align with 'db'
+    build:
+      context: ./django_backend
+      dockerfile: ./Dockerfile
+    command: sh -c "python manage.py makemigrations credit_system --noinput && python manage.py migrate && gunicorn --bind 0.0.0.0:8000 credit_approval_system.wsgi:application"
+    volumes:
+      - ./django_backend:/app # Mount the django_backend folder to /app
+      - ./data:/app/data      # Mount the data folder to /app/data
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis # Add dependency on redis for Celery
+    environment:
+      DATABASE_URL: postgres://user:password@db:5432/credit_approval_db
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+
+  worker: # This 'worker' service's indentation was already correct
+    build:
+      context: ./django_backend
+      dockerfile: ./Dockerfile
+    command: celery -A credit_approval_system worker -l info
+    volumes:
+      - ./django_backend:/app
+      - ./data:/app/data
+    depends_on:
+      - db
+      - redis
+    environment:
+      DATABASE_URL: postgres://user:password@db:5432/credit_approval_db
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0 
+
+  redis: # <--- ADDED THIS SERVICE BACK IN, ENSURING CORRECT INDENTATION
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
